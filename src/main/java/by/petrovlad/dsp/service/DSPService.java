@@ -1,6 +1,7 @@
 package by.petrovlad.dsp.service;
 
 import by.petrovlad.dsp.constants.AudioFormatConstants;
+import by.petrovlad.dsp.enums.WaveForm;
 import lombok.SneakyThrows;
 
 import javax.sound.sampled.AudioFileFormat;
@@ -16,48 +17,45 @@ import static by.petrovlad.dsp.constants.AudioFormatConstants.SAMPLING_RATE;
 import static java.lang.Math.*;
 
 public class DSPService {
+
+    public static final float MAX_AMPLITUDE = 1;
+    public static final float MIN_AMPLITUDE = -1;
     /**
-     * @param carrier wave to be modulated
-     * @param modulator information signal
+     * @param carrierWaveForm waveform to be modulated
+     * @param carrierFrequency its carrierFrequency
      * @param m modulation coefficient
+     * @param modulator information signal
      * @return modulated carrier signal
      */
-    public static float[] modulateByAmplitude(float[] carrier, float[] modulator, float m) {
+    public static float[] modulateByAmplitude(WaveForm carrierWaveForm, float carrierFrequency, float m, float[] modulator) {
         float[] result = new float[modulator.length];
 
-        float maxM = 0;
-        for (float val : modulator) {
-            float absVal = abs(val);
-            if (absVal > maxM) {
-                maxM = absVal;
-            }
-        }
-
+        float maxM = getMaxSignalAmplitude(modulator);
         for (int i = 0; i < modulator.length; i++) {
-            result[i] = carrier[i] * (1 + m * modulator[i] / maxM);
+            result[i] = carrierWaveForm.function(MAX_AMPLITUDE, carrierFrequency, 0, i) * (1 + m * modulator[i] / maxM);
         }
         return result;
     }
 
     /**
-     * Carrier is always a SINE.
-     *
-     * @param modulator information signal
-     * @param frequency frequency of SINE carrier signal
+     * @param carrierWaveForm waveform to be modulated
+     * @param carrierFrequency its carrierFrequency
      * @param m modulation coefficient
+     * @param modulator information signal
      * @return modulated carrier signal
      */
-    public static float[] modulateByFrequency(float[] modulator, float frequency, float m) {
+    public static float[] modulateByFrequency(WaveForm carrierWaveForm, float carrierFrequency, float m, float[] modulator)  {
         float[] result = new float[modulator.length];
 
         float f = 0;
         for (int i = 0; i < modulator.length; i++) {
-            f += 2 * PI * frequency * (1 + modulator[i]) / SAMPLING_RATE;
-            result[i] = (float) (sin(m * f));
+            f += 2 * PI * carrierFrequency * (1 + modulator[i]) / SAMPLING_RATE;
+            result[i] = carrierWaveForm.freqModulateFunction(m, f);
         }
 
         return result;
     }
+
 
     public static float[] mixComplexSignal(List<float[]> waveSignals) {
         // all the signals have the same length, so take first
@@ -68,6 +66,16 @@ public class DSPService {
             }
         }
         return resultSignal;
+    }
+
+    public static float[] generateSignal(WaveForm waveForm, int ms, float frequency, float amplitude, float phase) {
+        float[] buffer = new float[((int) (ms * AudioFormatConstants.SAMPLING_RATE)) / 1000];
+
+        for (int sample = 0; sample < buffer.length; sample++) {
+            buffer[sample] = waveForm.function(amplitude, frequency, phase, sample);
+        }
+
+        return buffer;
     }
 
     @SneakyThrows
@@ -92,7 +100,8 @@ public class DSPService {
         byte[] byteBuffer = new byte[signalBuffer.length * 2];
 
         // find max amplitude to collapse signal to [-1..1]
-        float max = getMaxSignalAmplitude(signalBuffer);
+        // collapse only if max amplitude above 1
+        float max = max(getMaxSignalAmplitude(signalBuffer), 1);
 
         int count = 0;
         int higherIndex = IS_BIG_ENDIAN ? 0 : 1;

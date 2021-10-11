@@ -7,73 +7,65 @@ import static java.lang.Math.*;
 public enum WaveForm {
     SINE {
         @Override
-        public float[] generateSignal(int ms, float frequency, float amplitude, float phase) {
-            phase = (float) (phase % (2 * PI));
-            float[] buffer = new float[((int) (ms * AudioFormatConstants.SAMPLING_RATE)) / 1000];
+        public float function(float amplitude, float frequency,  float phase, int n) {
+            float cycle = n / AudioFormatConstants.SAMPLING_RATE;
+            return (float) (amplitude * sin(2 * PI * frequency * cycle + phase));
+        }
 
-            for (int sample = 0; sample < buffer.length; sample++) {
-                double cycle = sample / AudioFormatConstants.SAMPLING_RATE;
-                buffer[sample] = (float) (amplitude * sin(2 * PI * frequency * cycle + phase));
-            }
-
-            return buffer;
+        @Override
+        public float freqModulateFunction(float m, float f) {
+            return (float) (sin(m * f));
         }
     },
     SQUARE {
         @Override
-        public float[] generateSignal(int ms, float frequency, float amplitude, float phase) {
-            phase = (float) (phase % (2 * PI));
-            float[] buffer = new float[((int) (ms * AudioFormatConstants.SAMPLING_RATE)) / 1000];
+        public float function(float amplitude, float frequency, float phase, int n) {
+            float cycle = n / AudioFormatConstants.SAMPLING_RATE;
+            double sinValue = (float) (amplitude * sin(2 * PI * frequency * cycle + phase));
+            return sinValue > 0 ? amplitude : -amplitude;
+        }
 
-            for (int sample = 0; sample < buffer.length; sample++) {
-                double cycle = sample / AudioFormatConstants.SAMPLING_RATE;
-                double sinValue = (float) (amplitude * sin(2 * PI * frequency * cycle + phase));
-                buffer[sample] = sinValue > 0 ? amplitude : -amplitude;
-            }
-
-            return buffer;
+        @Override
+        public float freqModulateFunction(float m, float f) {
+            return (sin(m * f)) > 0 ? 1 : -1;
         }
     },
     TRIANGLE {
         @Override
-        public float[] generateSignal(int ms, float frequency, float amplitude, float phase) {
-            phase = (float) (phase % (2 * PI));
-            float[] buffer = new float[((int) (ms * AudioFormatConstants.SAMPLING_RATE)) / 1000];
+        public float function(float amplitude, float frequency, float phase, int n) {
+            float cycle = n / AudioFormatConstants.SAMPLING_RATE;
+            return (float) (2 * amplitude/PI * asin(sin((PI * frequency * cycle) + phase)));
+        }
 
-            for (int sample = 0; sample < buffer.length; sample++) {
-                double cycle = sample / AudioFormatConstants.SAMPLING_RATE;
-                buffer[sample] = (float) (2 * amplitude/PI * asin(sin((PI * frequency * cycle) + phase)));
-            }
-
-            return buffer;
+        @Override
+        public float freqModulateFunction(float m, float f) {
+            return (float) (asin(sin(m * f)));
         }
     },
     SAWTOOTH {
         @Override
-        public float[] generateSignal(int ms, float frequency, float amplitude, float phase) {
-            phase = (float) (phase % (2 * PI));
-            float[] buffer = new float[((int) (ms * AudioFormatConstants.SAMPLING_RATE)) / 1000];
+        public float function(float amplitude, float frequency, float phase, int n) {
+            double cycle = n / AudioFormatConstants.SAMPLING_RATE;
+            return (float) (2 * amplitude / PI * atan(tan((PI * frequency * cycle) + phase)));
+        }
 
-            for (int sample = 0; sample < buffer.length; sample++) {
-                double cycle = sample / AudioFormatConstants.SAMPLING_RATE;
-                buffer[sample] = (float) (2 * amplitude / PI * atan(tan((PI * frequency * cycle) + phase)));
-            }
-
-            return buffer;
+        @Override
+        public float freqModulateFunction(float m, float f) {
+            return (float) (atan(tan(m * f)));
         }
     },
     NOISE {
         @Override
-        public float[] generateSignal(int ms, float frequency, float amplitude, float phase) {
-            float[] buffer = new float[((int) (ms * AudioFormatConstants.SAMPLING_RATE)) / 1000];
+        public float function(float amplitude, float frequency, float phase, int n) {
+            return (float) (amplitude * (random() * 2 - 1));
+        }
 
-            for (int sample = 0; sample < buffer.length; sample++) {
-                buffer[sample] = (float) (amplitude * (random() * 2 - 1));
-            }
-
-            return buffer;
+        @Override
+        public float freqModulateFunction(float m, float f) {
+            return 0;
         }
     };
 
-    public abstract float[] generateSignal(int ms, float frequency, float amplitude, float phase);
+    public abstract float function(float amplitude, float frequency, float phase, int n);
+    public abstract float freqModulateFunction(float m, float f);
 }

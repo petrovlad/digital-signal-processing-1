@@ -17,11 +17,16 @@ public class Main {
     private static final String AMPLITUDE_MODULATED_FILEPATH = "./sonic/aboba_ampl_modulated.wav";
     private static final String FREQUENCY_MODULATED_FILEPATH = "./sonic/aboba_freq_modulated.wav";
 
-    private static final float CARRIER_FREQUENCY = 20000;
-    private static final float CARRIER_AMPLITUDE = 1f;
-    private static final float CARRIER_PHASE = 0f;
+    private static final float CARRIER_FREQUENCY = 440;
     private static final float MODULATION_COEFFICIENT = 0.5f;
 
+    /*
+        00001 - синусоида;
+        00010 - импульс с различной скважностью;
+        00100 - треугольная;
+        01000 - пилообразная;
+        10000 - шум.
+     */
     @SneakyThrows
     public static void main(String[] args) {
         Scanner in = new Scanner(System.in);
@@ -55,13 +60,13 @@ public class Main {
 
                 System.out.printf("Enter amplitude for %s signal (from -1.0 to 1.0):%n> ", currentWaveForm);
                 float amplitude = in.nextFloat();
-                while (amplitude > 1.0f || amplitude < -1.0f) {
+                while (amplitude > MAX_AMPLITUDE || amplitude < MIN_AMPLITUDE) {
                     System.out.printf("Nope, try again.%n");
                     System.out.printf("Enter amplitude for %s signal (from -1.0 to 1.0):%n> ", currentWaveForm);
                     amplitude = in.nextFloat();
                 }
 
-                waveSignals.add(currentWaveForm.generateSignal(ms, frequency, amplitude, phase));
+                waveSignals.add(generateSignal(currentWaveForm, ms, frequency, amplitude, phase));
             }
         }
 
@@ -69,11 +74,10 @@ public class Main {
         float[] resultSignal = mixComplexSignal(waveSignals);
         writeSignalToFile(resultSignal, OUTPUT_FILEPATH);
         // save amplitude modulation results
-        float[] carrier = WaveForm.SINE.generateSignal(ms, CARRIER_FREQUENCY, CARRIER_AMPLITUDE, CARRIER_PHASE);
-        float[] modulatedByAmplitude = modulateByAmplitude(carrier, resultSignal, MODULATION_COEFFICIENT);
+        float[] modulatedByAmplitude = modulateByAmplitude(WaveForm.SINE, CARRIER_FREQUENCY, MODULATION_COEFFICIENT, resultSignal);
         writeSignalToFile(modulatedByAmplitude, AMPLITUDE_MODULATED_FILEPATH);
         // save frequency modulation results
-        float[] modulatedByFrequency = modulateByFrequency(resultSignal, CARRIER_FREQUENCY, MODULATION_COEFFICIENT);
+        float[] modulatedByFrequency = modulateByFrequency(WaveForm.SQUARE, CARRIER_FREQUENCY, MODULATION_COEFFICIENT, resultSignal);
         writeSignalToFile(modulatedByFrequency, FREQUENCY_MODULATED_FILEPATH);
     }
 }
